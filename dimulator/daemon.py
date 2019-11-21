@@ -1,29 +1,53 @@
 import random
 from dimulator import node
 
-class Daemon:
-    def __init__(self, nodes):
-        self.nodes = nodes
+class AbstractDaemon:
+    def __init__(self, graph):
+        self.__graph = graph
+
+    def graph(self):
+        return self.__graph
 
     def choose(self):
-        return self.nodes
+        return [], []
 
+    def each_loop(self, t):
+        nodes, edges = self.choose()
+        for node in nodes:
+            node.frame_update(t)
+        for edge in edges:
+            edge.frame_update(t)
+        # TODO return all information of node, edge, message
 
+    def main_loop(self, timeout=10**3, until=lambda: False):
+        t = 0
+        while((not until()) and (t < timeout)):
+            self.each_loop(t)
+            t += 1
+        if until():
+            print('the algorithm terminated successfully')
+        if t >= timeout:
+            print(f'time out: the algorithm do not terminated {timeout} frame')
 
-class Central_daemon(Daemon):
-    def __init__(self, nodes):
-        self.nodes = nodes
-
-    def choose(self):
-        return random.choice(self.nodes)
-
-
-
-
-
-class Fair_daemon(Daemon):
+class CentralDaemon(AbstractDaemon):
     pass #TODO
 
 
-class Unfair_daemon(Daemon):
+class FairDaemon(AbstractDaemon):
+    def __init__(self, graph):
+        super().__init__(graph)
+        self.update_interval = self.graph().max_weight()
+
+    def choose(self):
+        return self.graph().nodes(), self.graph().edges()
+
+    def each_loop(self, t):
+        nodes, edges = self.choose()
+        for node in nodes:
+            node.frame_update(t, t%self.update_interval==0)
+        for edge in edges:
+            edge.frame_update(t)
+
+
+class UnfairDaemon(AbstractDaemon):
     pass #TODO

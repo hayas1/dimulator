@@ -1,6 +1,8 @@
 from dimulator.message import Message
 
 class AbstractNode:
+    SHAPE = 'o'
+
     def __init__(self, id=None, size=300, color='#1f78b4', bcolor='k', bwidth=1, alpha=None, label=None):
         self.__id = id
         self.size = size
@@ -118,8 +120,12 @@ class UndirectedNode(AbstractNode):
     def receive_message(self, message):
         self.__received.append(message)
 
-    def frame_update(self, t):
-        print(t, self.__received)
+    def frame_update(self, t, synchronizable=False):
+        if synchronizable:
+            self.synch_update(t, list(self.__received))
+            self.__received.clear()
+        pass
 
-    def synch_update(self, t, msg):
+    def synch_update(self, t, messages):
+        # print(self.identifier(), t, messages)
         pass

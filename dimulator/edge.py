@@ -11,6 +11,9 @@ class AbstractEdge:
         self.alpha = None
         self.label = None
 
+    def __str__(self):
+        return f'({self.node_u().identifier()}, {self.node_v().identifier()})'
+
     def node_u(self):
         return self.__u
 
@@ -94,6 +97,7 @@ class UndirectedEdge(AbstractEdge):
             error_edge = f'edge ({self.node_u().identifier()}, {self.node_v().identifier()})'
             error_message = f'the message "{message}" is injected by unknown node {from_node}'
             raise ValueError(f'{error_edge}: {error_message}')
+
 
     def frame_update(self, t):
         for msg, living in list(self.sending_uv.items()):
