@@ -15,6 +15,15 @@ class AbstractNode:
     def identifier(self):
         return self.__id
 
+    def __str__(self):
+        return f'id: {str(self.identifier())}'
+
+    def attr_dict(self):
+        return dict(size=self.size, color=self.color, label=self.label, bcolor=self.border_color, bwidth=self.border_width, alpha=self.transparency)
+
+    def to_networkx_node(self):
+        return self, self.attr_dict()
+
 
 class DirectedNode(AbstractNode):       # TODO processing message and so on...
     def __init__(self, id=None, size=300, color='#1f78b4', bcolor='k', bwidth=1, alpha=None, label=None):
@@ -69,9 +78,10 @@ class UndirectedNode(AbstractNode):
         self.__nei_to_edge = {}     # when compute neighbors, this dictionary update
         self.__received = []
 
-    def __str__(self):
-        neighbors = f'{", ".join(str(neighbor.identifier()) for neighbor in self.neighbors())}'
-        return f'{{id: {self.identifier()}, neighbors: [{neighbors}]}}'
+    # def __str__(self):
+    #     neighbors = f'{", ".join(str(neighbor.identifier()) for neighbor in self.neighbors())}'
+    #     return f'{{id: {self.identifier()}, neighbors: [{neighbors}]}}'
+
 
     def edges(self):
         return list(self.__edges)

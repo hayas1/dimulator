@@ -17,7 +17,6 @@ class AbstractDaemon:
             node.frame_update(t)
         for edge in edges:
             edge.frame_update(t)
-        # TODO return all information of node, edge, message
 
     def main_loop(self, timeout=10**3, until=lambda: False):
         t = 0
@@ -28,6 +27,8 @@ class AbstractDaemon:
             print('the algorithm terminated successfully')
         if t >= timeout:
             print(f'time out: the algorithm do not terminated {timeout} frame')
+
+    def each_draw_network(self, t, )
 
 class CentralDaemon(AbstractDaemon):
     pass #TODO

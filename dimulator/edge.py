@@ -8,7 +8,7 @@ class AbstractEdge:
         self.width = 1
         self.color = 'k'
         self.style = 'solid'
-        self.alpha = None
+        self.transparency = None
         self.label = None
 
     def __str__(self):
@@ -22,6 +22,12 @@ class AbstractEdge:
 
     def weight(self):
         return self.__weight
+
+    def attr_dict(self):
+        return dict(width=self.width, color=self.color, style=self.style, alpha=self.transparency, label=self.label)
+
+    def to_networkx_edge(self):     #if node eject this edge, graph include this edge
+        return self.node_u(), self.node_v(), self.attr_dict()
 
     def opposite(self, node):
         if node==self.__u:
@@ -73,6 +79,10 @@ class UndirectedEdge(AbstractEdge):
         self.sending_vu = {}
         if connect:
             self.connect()
+
+    # def attr_dict(self):      # message position
+    #     dic = super().attr_dict()
+
 
     def connect(self):
         u, v = self.node_u(), self.node_v()
