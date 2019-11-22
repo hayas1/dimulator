@@ -67,8 +67,8 @@ class AbstractGraph:
         return max(edge.weight() for edge in self.__edges)
 
 class DirectedGraph(AbstractGraph):     # TODO everything
-    def to_networkx_graph(self, multigraph=False, pos=None):
-        return super().to_networkx_graph(directed=True, multigraph=multigraph, pos=pos)
+    def to_networkx_graph(self, multigraph=False):
+        return super().to_networkx_graph(directed=True, multigraph=multigraph)
 
     def connect_directed_edge(self, from_node, to_node, weight=1):
         edge = DirectedEdge(from_node, to_node, weight=weight, connect=True)
@@ -84,8 +84,8 @@ class DirectedGraph(AbstractGraph):     # TODO everything
                 to_node.eject_incoming(incoming)
 
 class UndirectedGraph(AbstractGraph):
-    def to_networkx_graph(self, multigraph=False, pos=None):
-        return super().to_networkx_graph(directed=False, multigraph=multigraph, pos=pos)
+    def to_networkx_graph(self, multigraph=False):
+        return super().to_networkx_graph(directed=False, multigraph=multigraph)
 
     def connect_undirected_edge(self, u, v, weight=1):
         edge = UndirectedEdge(u, v, weight=weight, connect=True)

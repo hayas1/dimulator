@@ -28,7 +28,8 @@ class AbstractDaemon:
         if t >= timeout:
             print(f'time out: the algorithm do not terminated {timeout} frame')
 
-    def each_draw_network(self, t, )
+    def each_draw_network(self, t, artists, pos):
+        pass
 
 class CentralDaemon(AbstractDaemon):
     pass #TODO
