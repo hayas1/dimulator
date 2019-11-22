@@ -1,14 +1,39 @@
-from dimulator.message import Message
+import numpy as np
+
+class MessageWrapper:
+    def __init__(self, message, from_node, to_node):
+        self.__msg = message
+        self.__from = from_node
+        self.__to = to_node
+        self.__living = 0
+
+    def message(self):
+        return self.__msg
+
+    def from_node(self):
+        return self.__from
+
+    def to_node(self):
+        return self.__to
+
+    def living(self):
+        return self.__living
+
+    def frame_update(self, t):
+        self.__living += 1
+
+    def progress(self, edge_weight):
+        return self.__living / edge_weight
 
 class AbstractEdge:
     def __init__(self, u, v, weight=1):
         self.__u = u
         self.__v = v
-        self.__weight = weight
+        self.__weight = int(weight)
         self.width = 1
         self.color = 'k'
         self.style = 'solid'
-        self.transparency = None
+        self.transparency = None        #cannot reflect, due to networkx's API
         self.label = None
 
     def __str__(self):
@@ -24,10 +49,10 @@ class AbstractEdge:
         return self.__weight
 
     def attr_dict(self):
-        return dict(width=self.width, color=self.color, style=self.style, alpha=self.transparency, label=self.label)
+        return {'width': self.width, 'color': self.color, 'style': self.style, 'alpha': self.transparency, 'label': self.label}
 
-    def to_networkx_edge(self):     #if node eject this edge, graph include this edge
-        return self.node_u(), self.node_v(), self.attr_dict()
+    def to_networkx_edge(self, weight=False):     #if node eject this edge, graph include this edge
+        return (self.node_u(), self.node_v(), {'w': self.weight()}) if weight else (self.node_u(), self.node_v(), self.attr_dict())
 
     def opposite(self, node):
         if node==self.__u:
@@ -42,7 +67,7 @@ class AbstractEdge:
 class DirectedEdge(AbstractEdge):
     def __init__(self, from_node, to_node, weight=1, connect=True):
         super().__init__(from_node, to_node, weight)
-        self.sending = {}       # {message: living}
+        self.__sending = []
         if connect:
             self.connect()
 
@@ -51,6 +76,9 @@ class DirectedEdge(AbstractEdge):
 
     def to_node(self):
         return self.node_v()
+
+    def sending(self):
+        return list(self.__sending)
 
     def connect(self):
         if not self.from_node().connectability(self):
@@ -65,14 +93,25 @@ class DirectedEdge(AbstractEdge):
             self.to_node().eject_incoming(self)
 
     def inject(self, message):
-        self.sending[message] = 1
+        self.__sending.append(MessageWrapper(message, self.from_node(), self.to_node()))
 
-    def frame_update(self, t):
-        for msg, living in list(self.sending.items()):
-            self.sending[msg] = living + 1
-            if living > self.weight():
-                self.node_v().receive_message(msg)
-                self.sending.pop(msg)
+    def post(self, message_wrapper, undirected=None):
+        if self.to_node().connectability(self) and undirected==None:
+            self.to_node().receive_message(self, message_wrapper.message())
+        else:
+            self.to_node().receive_message(undirected, message_wrapper.message())
+        self.__sending.remove(message_wrapper)
+
+    def frame_update(self, t, undirected=None):
+        for msg in self.__sending:
+            msg.frame_update(t)
+            if msg.living() >= self.weight():
+                self.post(msg, undirected=undirected)
+
+    def message_pos(self, message, from_pos, to_pos):
+        f, t = np.array(from_pos), np.array(to_pos)
+        return f + (t - f) * message.living() / self.weight()
+
 
 
 class UndirectedEdge(AbstractEdge):
@@ -80,13 +119,13 @@ class UndirectedEdge(AbstractEdge):
         super().__init__(u, v, weight)
         self.u_to_v = DirectedEdge(u, v, weight=weight, connect=False)
         self.v_to_u = DirectedEdge(v, u, weight=weight, connect=False)
-
         if connect:
             self.connect()
 
-    # def attr_dict(self):      # message position
-    #     dic = super().attr_dict()
-
+    def sending(self):
+        messages = self.u_to_v.sending()
+        messages.extend(self.v_to_u.sending())
+        return messages     # flatten
 
     def connect(self):
         u, v = self.node_u(), self.node_v()
@@ -112,7 +151,28 @@ class UndirectedEdge(AbstractEdge):
             error_message = f'the message "{message}" is injected by unknown node {from_node}'
             raise ValueError(f'{error_edge}: {error_message}')
 
+    def post(self, message_wrapper):
+        if message_wrapper in self.u_to_v.sending():
+            return self.u_to_v.post(message_wrapper, undirected=self)
+        elif message_wrapper in self.v_to_u.sending():
+            return self.v_to_u.post(message_wrapper, undirected=self)
+        else:
+            error_edge = f'undirected edge ({self.node_u().identifier()}, {self.node_v().identifier()})'
+            error_message = f'the message "{message_wrapper.message()}" is not sending by this edge'
+            raise KeyError(f'{error_edge}: {error_message}')
 
     def frame_update(self, t):
-        self.u_to_v.frame_update(t)
-        self.v_to_u.frame_update(t)
+        self.u_to_v.frame_update(t, undirected=self)
+        self.v_to_u.frame_update(t, undirected=self)
+
+    def message_pos(self, message_wrapper, u_pos, v_pos):
+        if message_wrapper in self.u_to_v.sending():
+            return self.u_to_v.message_pos(message_wrapper, u_pos, v_pos)
+        elif message_wrapper in self.v_to_u.sending():
+            return self.v_to_u.message_pos(message_wrapper, v_pos, u_pos)
+        else:
+            error_edge = f'undirected edge ({self.node_u().identifier()}, {self.node_v().identifier()})'
+            error_message = f'the message "{message_wrapper.message()}" is not sending by this edge'
+            raise KeyError(f'{error_edge}: {error_message}')
+
+
