@@ -8,10 +8,10 @@ class AbstractGraph:
         self.__nodes = []
         self.__edges = []
 
-    def to_networkx_graph(self, directed=False, multigraph=False):
+    def to_networkx_graph(self, directed=False, multigraph=False, weight=False):
         g = self.__select_graph(directed, multigraph)
         g.add_nodes_from(node.to_networkx_node() for node in self.nodes())
-        g.add_edges_from(edge.to_networkx_edge() for edge in self.edges())
+        g.add_edges_from(edge.to_networkx_edge(weight=weight) for edge in self.edges())
         return g
 
     def __select_graph(self, directed, multigraph):
@@ -25,6 +25,34 @@ class AbstractGraph:
             return nx.Graph()
         else:
             raise ValueError(f'invalid input ({directed}, {multigraph}), expected boolean')
+
+    def draw_network(self, label=True, weight=False):
+        g = self.to_networkx_graph(weight=weight)
+        self.draw_networkx(g, nx.spring_layout(g), label=label)
+
+    def draw_networkx(self, g, pos, label=True):
+        nodes, edges = self.nodes(), self.edges()
+
+        # TODO default argument can pass dictionary as **d
+        node_dict = [node.attr_dict() for node in nodes]
+        nsize = [d.get('size') for d in node_dict]
+        ncolor = [d.get('color') for d in node_dict]
+        nbcolor = [d.get('bcolor') for d in node_dict]
+        nbwidth = [d.get('bwidth') for d in node_dict]
+        nalpha = [d.get('alpha') for d in node_dict]
+        nlabel = [d.get('label') for d in node_dict]
+
+        edge_dict = [edge.attr_dict() for edge in edges]
+        ewidth = [d.get('width') for d in edge_dict]
+        ecolor = [d.get('color') for d in edge_dict]
+        estyle = [d.get('style') for d in edge_dict]
+        # ealpha = [d.get('alpha') for d in edge_dict]
+        elabel = [d.get('label') for d in edge_dict]
+
+        nx.draw_networkx_nodes(g, pos, node_size=nsize, node_color=ncolor, edgecolors=nbcolor, linewidths=nbwidth, alpha=nalpha, label=nlabel)
+        nx.draw_networkx_edges(g, pos, width=ewidth, edge_color=ecolor, style=estyle, label=elabel)
+        if label:
+            nx.draw_networkx_labels(g, pos)
 
     def nodes(self):
         return list(self.__nodes)
@@ -67,8 +95,8 @@ class AbstractGraph:
         return max(edge.weight() for edge in self.__edges)
 
 class DirectedGraph(AbstractGraph):     # TODO everything
-    def to_networkx_graph(self, multigraph=False):
-        return super().to_networkx_graph(directed=True, multigraph=multigraph)
+    def to_networkx_graph(self, multigraph=False, weight=False):
+        return super().to_networkx_graph(directed=True, multigraph=multigraph, weight=weight)
 
     def connect_directed_edge(self, from_node, to_node, weight=1):
         edge = DirectedEdge(from_node, to_node, weight=weight, connect=True)
@@ -84,8 +112,8 @@ class DirectedGraph(AbstractGraph):     # TODO everything
                 to_node.eject_incoming(incoming)
 
 class UndirectedGraph(AbstractGraph):
-    def to_networkx_graph(self, multigraph=False):
-        return super().to_networkx_graph(directed=False, multigraph=multigraph)
+    def to_networkx_graph(self, multigraph=False, weight=False):
+        return super().to_networkx_graph(directed=False, multigraph=multigraph, weight=weight)
 
     def connect_undirected_edge(self, u, v, weight=1):
         edge = UndirectedEdge(u, v, weight=weight, connect=True)
