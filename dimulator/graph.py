@@ -94,16 +94,16 @@ class UndirectedGraph(AbstractGraph):
 
     def remove_between_u_and_v(self, u, v):
         for edge in u.edges():
-            if edge.opositte() == v:
-                u.remove_edge(edge)
+            if edge.opposite(u) == v:
+                self.remove_edge(edge)
         for edge in v.edges():
-            if edge.opositte() == u:
-                v.remove_edge(edge)
+            if edge.opposite(v) == u:
+                self.remove_edge(edge)
 
     def eject_between_u_and_v(self, u, v):
         for edge in u.edges():
-            if edge.opositte() == v:
-                u.eject_edge(edge)
+            if edge.opposite(u) == v:
+                self.eject_edge(edge)
         for edge in v.edges():
-            if edge.opositte() == u:
-                v.eject_edge(edge)
+            if edge.opposite(v) == u:
+                self.eject_edge(edge)

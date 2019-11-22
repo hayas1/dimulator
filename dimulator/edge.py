@@ -39,9 +39,10 @@ class AbstractEdge:
             error_message = f'the node {node} is not connected'
             raise ValueError(f'{error_edge}: {error_message}')
 
-class DirectedEdge(AbstractEdge):       # TODO everything
+class DirectedEdge(AbstractEdge):
     def __init__(self, from_node, to_node, weight=1, connect=True):
         super().__init__(from_node, to_node, weight)
+        self.sending = {}       # {message: living}
         if connect:
             self.connect()
 
@@ -64,19 +65,22 @@ class DirectedEdge(AbstractEdge):       # TODO everything
             self.to_node().eject_incoming(self)
 
     def inject(self, message):
-        # TODO
-        pass
+        self.sending[message] = 1
 
     def frame_update(self, t):
-        # TODO
-        pass
+        for msg, living in list(self.sending.items()):
+            self.sending[msg] = living + 1
+            if living > self.weight():
+                self.node_v().receive_message(msg)
+                self.sending.pop(msg)
 
 
 class UndirectedEdge(AbstractEdge):
     def __init__(self, u, v, weight=1, connect=True):
         super().__init__(u, v, weight)
-        self.sending_uv = {}        # {message: living}
-        self.sending_vu = {}
+        self.u_to_v = DirectedEdge(u, v, weight=weight, connect=False)
+        self.v_to_u = DirectedEdge(v, u, weight=weight, connect=False)
+
         if connect:
             self.connect()
 
@@ -100,23 +104,15 @@ class UndirectedEdge(AbstractEdge):
 
     def inject(self, from_node, message):
         if from_node == self.node_u():
-            self.sending_uv[message] = 1
+            self.u_to_v.inject(message)
         elif from_node == self.node_v():
-            self.sending_vu[message] = 1
+            self.v_to_u.inject(message)
         else:
-            error_edge = f'edge ({self.node_u().identifier()}, {self.node_v().identifier()})'
+            error_edge = f'undirected edge ({self.node_u().identifier()}, {self.node_v().identifier()})'
             error_message = f'the message "{message}" is injected by unknown node {from_node}'
             raise ValueError(f'{error_edge}: {error_message}')
 
 
     def frame_update(self, t):
-        for msg, living in list(self.sending_uv.items()):
-            self.sending_uv[msg] = living + 1
-            if living > self.weight():
-                self.node_v().receive_message(msg)
-                self.sending_uv.pop(msg)
-        for msg, living in list(self.sending_vu.items()):
-            self.sending_vu[msg] = living + 1
-            if living >= self.weight():
-                self.node_u().receive_message(msg)
-                self.sending_vu.pop(msg)
+        self.u_to_v.frame_update(t)
+        self.v_to_u.frame_update(t)
