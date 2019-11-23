@@ -28,5 +28,5 @@ class AbstractMessage:
 
 
 class Message(AbstractMessage):
-    def __init__(self, message, size=300, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=None, label=None):
+    def __init__(self, message, size=100, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=None, label=None):
         super().__init__(message, size=size, shape=shape, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)

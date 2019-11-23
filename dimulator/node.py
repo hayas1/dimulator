@@ -18,6 +18,9 @@ class AbstractNode:
     def __str__(self):
         return f'{str(self.identifier())}'
 
+    def make_message(self, message, size=100, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=1, label=None):
+        return Message(message, size=size, shape=shape, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)
+
     def attr_dict(self):
         return {'size': self.size, 'color': self.color, 'label': self.label, 'bcolor': self.border_color,
                 'bwidth': self.border_width, 'alpha': self.transparency}
@@ -77,7 +80,7 @@ class UndirectedNode(AbstractNode):
         super().__init__(id=id, size=size, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)
         self.__edges = []
         self.__nei_to_edge = {}     # when compute neighbors, this dictionary update
-        self.__received = {}    # {edge: [message, ...], ...}
+        self.__received = []    # [(edge, message), ...]
 
     # def __str__(self):
     #     neighbors = f'{", ".join(str(neighbor.identifier()) for neighbor in self.neighbors())}'
@@ -88,7 +91,7 @@ class UndirectedNode(AbstractNode):
         return list(self.__edges)
 
     def recieved(self):
-        return dict(self.__received)
+        return list(self.__received)
 
     def add_edge(self, undirected_edge, recursive=False):
         self.__edges.extend(undirected_edge) if recursive else self.__edges.append(undirected_edge)
@@ -119,6 +122,12 @@ class UndirectedNode(AbstractNode):
                 if edge.opposite(self) == neighbor:
                     return edge
 
+    def degree(self, neighbor=False):
+        if neighbor:
+            return len(self.neighbors())
+        else:
+            return len(self.__edges)
+
     def send_message(self, neighbor, message, duality=False):
         if (duality == False) and (neighbor in self.__nei_to_edge):
             self.__nei_to_edge[neighbor].inject(self, message)
@@ -140,16 +149,18 @@ class UndirectedNode(AbstractNode):
             edge.inject(self, message)
 
     def receive_message(self, edge, message):
-        self.__received[edge] = message
+        self.__received.append((edge, message))
 
     def frame_update(self, t, synchronizable=False):
+        round = 0
         if synchronizable:
-            self.synch_update(t, dict(self.__received))
+            self.synch_update(round, list(self.__received))
             self.__received.clear()
+            round += 1
 
-    def synch_update(self, t, message_dict):      # {edge: message, ...}
+    def synch_update(self, round, message_tuples):
         '''
-        in synchronized network, node can send only 1 message in 1 round
+        `message_tuples = [(edge, message), ...]` in order of arrival
+        in synchronized network, node can send only 1 message to 1 edge in 1 round
         '''
-        # print(self.identifier(), t, messages)
         pass

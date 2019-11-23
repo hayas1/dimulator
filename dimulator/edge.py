@@ -26,7 +26,7 @@ class MessageWrapper:
         return self.__living / edge_weight
 
 class AbstractEdge:
-    def __init__(self, u, v, weight=1):
+    def __init__(self, u, v, weight=10):
         self.__u = u
         self.__v = v
         self.__weight = int(weight)
@@ -45,14 +45,21 @@ class AbstractEdge:
     def node_v(self):
         return self.__v
 
+    @property
     def weight(self):
         return self.__weight
+    @weight.setter
+    def weight(self, w):
+        self.__weight = int(w)
 
     def attr_dict(self):
         return {'width': self.width, 'color': self.color, 'style': self.style, 'alpha': self.transparency, 'label': self.label}
 
     def to_networkx_edge(self, weight=False):     #if node eject this edge, graph include this edge
-        return (self.node_u(), self.node_v(), {'w': self.weight()}) if weight else (self.node_u(), self.node_v(), self.attr_dict())
+        return (self.node_u(), self.node_v(), {'w': self.weight}) if weight else (self.node_u(), self.node_v(), self.attr_dict())
+
+    def same_path(self, u, v):
+        return (self.node_u() == u) and (self.node_v() == v)
 
     def opposite(self, node):
         if node==self.__u:
@@ -65,11 +72,14 @@ class AbstractEdge:
             raise ValueError(f'{error_edge}: {error_message}')
 
 class DirectedEdge(AbstractEdge):
-    def __init__(self, from_node, to_node, weight=1, connect=True):
+    def __init__(self, from_node, to_node, weight=10, connect=True):
         super().__init__(from_node, to_node, weight)
         self.__sending = []
         if connect:
             self.connect()
+
+    def __str__(self):
+        return f'directed ({self.from_node().identifier()}, {self.to_node().identifier()}, (weight:{self.weight}))'
 
     def from_node(self):
         return self.node_u()
@@ -105,27 +115,42 @@ class DirectedEdge(AbstractEdge):
     def frame_update(self, t, undirected=None):
         for msg in self.__sending:
             msg.frame_update(t)
-            if msg.living() >= self.weight():
+            if msg.living() >= self.weight:
                 self.post(msg, undirected=undirected)
 
     def message_pos(self, message, from_pos, to_pos):
         f, t = np.array(from_pos), np.array(to_pos)
-        return f + (t - f) * message.living() / self.weight()
+        return f + (t - f) * message.living() / self.weight
 
 
 
 class UndirectedEdge(AbstractEdge):
-    def __init__(self, u, v, weight=1, connect=True):
+    def __init__(self, u, v, weight=10, connect=True):
         super().__init__(u, v, weight)
         self.u_to_v = DirectedEdge(u, v, weight=weight, connect=False)
         self.v_to_u = DirectedEdge(v, u, weight=weight, connect=False)
         if connect:
             self.connect()
 
+    def __str__(self):
+        return f'undirected ({self.node_u().identifier()}, {self.node_v().identifier()}, (weight:{self.weight}))'
+
+    @property
+    def weight(self):
+        return super().weight
+    @weight.setter
+    def weight(self, w):
+        super().weight = int(w)
+        self.u_to_v.weight = int(w)
+        self.v_to_u.weight = int(w)
+
     def sending(self):
         messages = self.u_to_v.sending()
         messages.extend(self.v_to_u.sending())
         return messages     # flatten
+
+    def same_path(self, u, v):
+        return ((self.node_u() == u) and (self.node_v() == v)) or  ((self.node_u() == v) and (self.node_v() == u))
 
     def connect(self):
         u, v = self.node_u(), self.node_v()

@@ -12,6 +12,7 @@ pylint = "*"
 sphinx = "*"
 numpy = "*"
 matplotlib = "*"
+pillow = "*"
 
 [requires]
 python_version = "3.7"
