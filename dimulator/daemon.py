@@ -91,7 +91,7 @@ class FairDaemon(AbstractDaemon):
             for msg_wrapper in edge.sending():
                 msgpos = edge.message_pos(msg_wrapper, u_pos, v_pos)
                 message = msg_wrapper.message()
-                msg_dict = message.dict_for_scatter() if hasattr(message, 'dict_for_scatter') else make_message(message).dict_for_scatter()
+                msg_dict = message.dict_for_scatter()
                 plt.scatter(*msgpos, **msg_dict)
 
         self.each_loop(t)

@@ -1,3 +1,5 @@
+from collections import deque
+
 import numpy as np
 
 class MessageWrapper:
@@ -74,7 +76,7 @@ class AbstractEdge:
 class DirectedEdge(AbstractEdge):
     def __init__(self, from_node, to_node, weight=10, connect=True):
         super().__init__(from_node, to_node, weight)
-        self.__sending = []
+        self.__sending = deque([None]*self.weight)
         if connect:
             self.connect()
 
@@ -88,6 +90,9 @@ class DirectedEdge(AbstractEdge):
         return self.node_v()
 
     def sending(self):
+        return list(filter(lambda m: m != None, self.__sending))
+
+    def sending_state(self):
         return list(self.__sending)
 
     def connect(self):
@@ -103,20 +108,31 @@ class DirectedEdge(AbstractEdge):
             self.to_node().eject_incoming(self)
 
     def inject(self, message):
-        self.__sending.append(MessageWrapper(message, self.from_node(), self.to_node()))
+        self.__sending[0] = MessageWrapper(message, self.from_node(), self.to_node())
 
     def post(self, message_wrapper, undirected=None):
         if self.to_node().connectability(self) and undirected==None:
             self.to_node().receive_message(self, message_wrapper.message())
         else:
             self.to_node().receive_message(undirected, message_wrapper.message())
-        self.__sending.remove(message_wrapper)
+        # # self.__sending.remove(message_wrapper)
+        # self.__sending[-1] = None
+
+    def lost_message_pos(self, pos):
+        self.__sending[pos] = None
+
+    def lost_message(self, message_wrapper):
+        self.lost_message_pos(self.__sending.index(message_wrapper))
 
     def frame_update(self, t, undirected=None):
-        for msg in self.__sending:
-            msg.frame_update(t)
-            if msg.living() >= self.weight:
-                self.post(msg, undirected=undirected)
+        for msg_wrapper in filter(lambda m: m != None, self.__sending):
+            msg_wrapper.frame_update(t)
+            # if msg_wrapper.living() >= self.weight:
+            #     self.post(msg_wrapper, undirected=undirected)
+        if self.__sending[-1] != None:
+            self.post(self.__sending[-1], undirected=undirected)
+            self.__sending[-1] = None
+        self.__sending.rotate()
 
     def message_pos(self, message, from_pos, to_pos):
         f, t = np.array(from_pos), np.array(to_pos)
@@ -186,9 +202,19 @@ class UndirectedEdge(AbstractEdge):
             error_message = f'the message "{message_wrapper.message()}" is not sending by this edge'
             raise KeyError(f'{error_edge}: {error_message}')
 
-    def frame_update(self, t):
+    def frame_update(self, t, conflict=True):
+        for msg_uv, msg_vu in zip(self.u_to_v.sending_state(), reversed(self.v_to_u.sending_state())):
+            if conflict and msg_uv!=None and msg_vu!=None:
+                self.u_to_v.lost_message(msg_uv)
+                self.v_to_u.lost_message(msg_vu)
         self.u_to_v.frame_update(t, undirected=self)
+        # TODO refactoring: very bad copy and paste implement
+        for msg_uv, msg_vu in zip(self.u_to_v.sending_state(), reversed(self.v_to_u.sending_state())):
+            if conflict and msg_uv!=None and msg_vu!=None:
+                self.u_to_v.lost_message(msg_uv)
+                self.v_to_u.lost_message(msg_vu)
         self.v_to_u.frame_update(t, undirected=self)
+
 
     def message_pos(self, message_wrapper, u_pos, v_pos):
         if message_wrapper in self.u_to_v.sending():
