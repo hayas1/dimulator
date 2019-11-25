@@ -9,7 +9,7 @@ import numpy as np
 
 
 class BFSTreeNode(UndirectedNode):
-    def __init__(self, id=1, root=False):
+    def __init__(self, id=None, root=False):
         super().__init__(id=id)
         self.parent = None
         self.root = root

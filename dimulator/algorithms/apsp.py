@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class APSPNode(UndirectedNode):
-    def __init__(self, id=1, bfs_root=True):
+    def __init__(self, id=None, bfs_root=True):
         super().__init__(id=id)
         self.bfs_root = bfs_root
         self.parent = {}

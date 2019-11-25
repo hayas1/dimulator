@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as anm
 
 class AbstractDaemon:
-    def __init__(self, graph):
+    def __init__(self, graph, conflict=True):
         self.__graph = graph
+        self.conflict = conflict
 
     def graph(self):
         return self.__graph
@@ -30,7 +31,7 @@ class AbstractDaemon:
         for node in nodes:
             node.frame_update(t)
         for edge in edges:
-            edge.frame_update(t)
+            edge.frame_update(t, conflict=self.conflict)
 
     def animation(self, pos, weight=False, label=False, interval=100, frames=20):
         g = self.graph().to_networkx_graph(weight=weight)
@@ -65,8 +66,8 @@ class CentralDaemon(AbstractDaemon):
 
 
 class FairDaemon(AbstractDaemon):
-    def __init__(self, graph):
-        super().__init__(graph)
+    def __init__(self, graph, conflict=True):
+        super().__init__(graph, conflict=conflict)
         self.update_interval = self.graph().max_weight()
 
     def choose(self):
@@ -77,7 +78,7 @@ class FairDaemon(AbstractDaemon):
         for node in nodes:
             node.frame_update(t, t%self.update_interval==0)
         for edge in edges:
-            edge.frame_update(t)
+            edge.frame_update(t, conflict=self.conflict)
 
     # TODO refactoring to better override
     def each_draw_network(self, t, artists, g, pos, label=True):

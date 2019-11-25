@@ -100,7 +100,13 @@ class AbstractGraph:
         return max(edge.weight for edge in self.__edges)
 
     def max_degree(self):
-        return max(node.dgree() for node in self.__nodes)
+        return max(node.degree() for node in self.__nodes)
+
+    def n(self):
+        return len(self.__nodes)
+
+    def m(self):
+        return len(self.__edges)
 
 class DirectedGraph(AbstractGraph):     # TODO everything
     def to_networkx_graph(self, multigraph=False, weight=False):
