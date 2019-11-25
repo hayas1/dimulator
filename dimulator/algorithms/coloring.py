@@ -29,8 +29,7 @@ class ColoringNode(UndirectedNode):
     def synch_update(self, round, message_tuples):
         if round == self.coloring_round:
             self.x = self.coloring(round, message_tuples)
-        else:
-            self.color_reduce_induced(round%self.coloring_round, message_tuples, self.x)
+        self.color_reduce_induced(round%self.coloring_round, message_tuples, self.x)
 
     def coloring(self, round, message_tuples):
         if round == 0:
@@ -62,6 +61,7 @@ class ColoringNode(UndirectedNode):
             self.induced_nc.get(x, []).extend(m[0] for e, m in message_tuples if m[1]==x)
             if self.c == round:
                 self.c = self.induced_min_color(x)
+                self.recursive_return = self.c
                 self.color = self.aveilable_color[self.c-1]      # for animation
                 self.bloadcast(self.make_message((self.c, x), color=self.aveilable_color[self.c-1]))
 
@@ -111,4 +111,4 @@ def animate_coloring(n=15, frames=None):
 def save_coloring_as_gif(n=15, frames=None, dir='./out', file='coloring.gif'):
     os.makedirs(dir, exist_ok=True)
     ani = animate_coloring(n=n, frames=frames)
-    ani.save(f'{dir}/{file}', fps=15)
+    ani.save(f'{dir}/{file}', fps=10)

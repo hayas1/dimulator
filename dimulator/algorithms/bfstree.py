@@ -57,4 +57,4 @@ def animate_breadth_first_tree(n=15, frames=None):
 def save_bfs_as_gif(n=15, frames=None, dir='./out', file='bfstree.gif'):
     os.makedirs(dir, exist_ok=True)
     ani = animate_breadth_first_tree(n=n, frames=frames)
-    ani.save(f'{dir}/{file}', fps=15)
+    ani.save(f'{dir}/{file}', fps=10)

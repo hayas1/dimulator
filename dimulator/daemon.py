@@ -16,15 +16,15 @@ class AbstractDaemon:
     def choose(self):
         return [], []
 
-    def main_loop(self, timeout=10**3, until=lambda: False):
-        t = 0
-        while((not until()) and (t < timeout)):
+    def main_loop(self, start=0, timeout=10**3, until=lambda: False):
+        t = start
+        while((not until()) and (t < start+timeout)):
             self.each_loop(t)
             t += 1
         if until():
             print('the algorithm terminated successfully')
-        if t >= timeout:
-            print(f'time out: the algorithm do not terminated {timeout} frame')
+        if t >= start+timeout:
+            print(f'time out: the algorithm do not terminated {start+timeout} frame')
 
     def each_loop(self, t):
         nodes, edges = self.choose()

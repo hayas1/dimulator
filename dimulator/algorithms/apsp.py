@@ -11,15 +11,20 @@ from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
 
+# in pseudocode, after node get token, it send token at each round
 class APSPNode(UndirectedNode):
+    CMAP = plt.get_cmap('gist_rainbow')
+
     def __init__(self, id=None, bfs_root=True):
         super().__init__(id=id)
         self.bfs_root = bfs_root
-        self.parent = {}
+        self.parents = {}
         self.bloadcasted = []
         self.bloadcasting = {}
-        self.cmap = plt.get_cmap('tab10')
-        self.odd_even_msg_controller = deque([] for _ in range(2))
+        self.msg_switch_buff = deque([] for _ in range(2))
+
+    def make_aveilable_color(self, n):      # for animation
+        self.apsp_color = list(APSPNode.CMAP(i/n) for i in range(n))
 
     def initialize(self, root=False):
         self.root = root
@@ -28,15 +33,15 @@ class APSPNode(UndirectedNode):
         self.unvisited = self.neighbors()
         self.start_bfs_round = np.inf
         if root:
-            self.color = 'r'    # for animation
+            self.color = self.apsp_color[self.identifier()]
 
     def synch_update(self, round, message_tuples):
-        self.odd_even_msg_controller[0] = message_tuples
-        self.odd_even_msg_controller.rotate()
+        self.msg_switch_buff[0] = message_tuples
+        self.msg_switch_buff.rotate()
         if round % 2 == 0:
-            self.token_circulation(round, self.odd_even_msg_controller[0])
+            self.token_circulation(round, self.msg_switch_buff[0])
         elif round % 2 == 1:
-            self.bfs_for_apsp(round-self.start_bfs_round, self.odd_even_msg_controller[0])
+            self.bfs_for_apsp(round-self.start_bfs_round, self.msg_switch_buff[0])
 
     def token_circulation(self, round, message_tuples):
         if self.token == True:
@@ -66,21 +71,21 @@ class APSPNode(UndirectedNode):
 
     def bfs_for_apsp(self, round, message_tuples):
         if round==0 and self.bfs_root==True:
-            self.color = self.cmap(self.identifier())    # for animation
+            self.color = self.apsp_color[self.identifier()]    # for animation
             self.bloadcasting[self.identifier()] = (self.identifier(), 'pulse', self.identifier())
-            # print(f'round {round}, id{self.identifier()} want to bloadcast {(self.identifier(), "pulse", self.identifier())}')
+            self.parents[self.identifier()] = self.identifier()
         if self.bloadcasting:
-            # print(f'round {round}, id{self.identifier()}, bloadcasting {self.bloadcasting}')
-            root, msg = self.identifier(), self.bloadcasting.pop(self.identifier()) if round==0 else self.bloadcasting.popitem()
-            self.bloadcast(self.make_message(msg, color=self.cmap(root)))
+            # if self.identifier() == 0: print(f'id0 bloadcasting {self.bloadcasting}')
+            root, msg = (self.identifier(), self.bloadcasting.pop(self.identifier())) if round==0 else self.bloadcasting.popitem()
+            self.bloadcast(self.make_message(msg, color=self.apsp_color[root]), without=[self.parents.get(root, None)])
+            # if self.identifier() == 0: print(f'id0 bloadcasted {msg}, when root {root}')
             self.bloadcasted.append(root)   # only one times broadcast for one root
-        _, r = tuple(zip(*message_tuples)) if message_tuples else (None, ())
-        if r:
-            for vj_id, pulse, root in filter(lambda vmr: vmr[1]=='pulse', r):
-                if self.parent.get(root, True):     # no parent, return True
-                    self.parent[root] = vj_id
+        if message_tuples:
+            for vj_id, pulse, root in [m for e, m in message_tuples if len(m)==3]:
+                if self.parents.get(root, True):     # no parent, return True
+                    self.parents[root] = vj_id
                     self.bloadcasting[root] = (self.identifier(), pulse, root)
-                    # self.edge(vj_id).color = 'r'  # for animation
+                    # if self.identifier == 0: print(f'id0: vj_id: {vj_id}, pulse: {pulse}, root: {root}, and broadcasting {(self.identifier(), pulse, root)}')
 
 
 def animate_all_pair_shortest_path(n=15, frames=None):
@@ -97,6 +102,10 @@ def animate_all_pair_shortest_path(n=15, frames=None):
     for u, v, dist in degree_base_edge_layout(pos):
         graph.connect_undirected_edge(u, v, weight=min(10, 300/(1+np.exp(-(3*dist-5)))))
 
+    ### this information use only for animation ###
+    for node in nodes:
+        node.make_aveilable_color(graph.n())
+
     # initialize node
     for node in nodes:
         if node.identifier() == n-1:
@@ -108,9 +117,9 @@ def animate_all_pair_shortest_path(n=15, frames=None):
     daemon = FairDaemon(graph)
 
     # start animation
-    return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10)
+    return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10), nodes
 
 def save_apsp_as_gif(n=15, frames=None, dir='./out', file='apsp.gif'):
     os.makedirs(dir, exist_ok=True)
-    ani = animate_all_pair_shortest_path(n=n, frames=frames)
-    ani.save(f'{dir}/{file}', fps=15)
+    ani, _ = animate_all_pair_shortest_path(n=n, frames=frames)
+    ani.save(f'{dir}/{file}', fps=10)

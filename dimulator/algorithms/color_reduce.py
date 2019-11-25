@@ -56,8 +56,7 @@ def animate_color_reduce(n=15, frames=None):
 
     # make and set edge
     for u, v, dist in degree_base_edge_layout(pos):
-        # graph.connect_undirected_edge(u, v, weight=min(20, 300/(1+np.exp(-(3*dist-5)))))
-        graph.connect_undirected_edge(u, v, weight=6)
+        graph.connect_undirected_edge(u, v, weight=min(20, 300/(1+np.exp(-(3*dist-5)))))
 
     ### this information use only for animation ###
     for node in nodes:
@@ -72,4 +71,4 @@ def animate_color_reduce(n=15, frames=None):
 def save_color_reduce_as_gif(n=15, frames=None, dir='./out', file='color_reduce.gif'):
     os.makedirs(dir, exist_ok=True)
     ani = animate_color_reduce(n=n, frames=frames)
-    ani.save(f'{dir}/{file}', fps=15)
+    ani.save(f'{dir}/{file}', fps=10)
