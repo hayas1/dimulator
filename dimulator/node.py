@@ -91,7 +91,7 @@ class UndirectedNode(AbstractNode):
     def edges(self):
         return list(self.__edges)
 
-    def recieved(self):
+    def recieved(self):     #TODO typo
         return list(self.__received)
 
     def add_edge(self, undirected_edge, recursive=False):

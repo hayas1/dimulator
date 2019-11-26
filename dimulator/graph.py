@@ -33,7 +33,7 @@ class AbstractGraph:
         self.draw_networkx(g, nx.spring_layout(g), label=label, weight=weight)
 
     # TODO refactoring these method should not belong to this class
-    def draw_networkx(self, g, pos, label=True, weight=False):
+    def draw_networkx(self, g, pos, label=False, weight=False):
         nodes, edges = self.nodes(), self.edges()
 
         node_dict = {'node_size': [], 'node_color': [], 'edgecolors': [], 'linewidths': [], 'alpha':[], 'label': []}
