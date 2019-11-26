@@ -1,5 +1,8 @@
 def make_message(message, size=100, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=1, label=None):
-    return Message(message, size=size, shape=shape, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)
+    if isinstance(message, AbstractMessage):
+        return Message(message.message(), size=size, shape=shape, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)
+    else:
+        return Message(message, size=size, shape=shape, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)
 
 class AbstractMessage:
     def __init__(self, message, size=100, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=1, label=None):
@@ -15,6 +18,9 @@ class AbstractMessage:
     def message(self):
         return self.__msg
 
+    def __getitem__(self, item):
+        return self.__msg[item]
+
     def attr_dict(self):
         return {'size': self.size, 'shape': self.shape, 'color': self.color, 'label': self.label,
                 'bcolor': self.border_color, 'bwidth': self.border_width, 'alpha': self.transparency}
@@ -28,5 +34,5 @@ class AbstractMessage:
 
 
 class Message(AbstractMessage):
-    def __init__(self, message, size=300, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=None, label=None):
+    def __init__(self, message, size=100, shape='o', color='#ff9999', bcolor='k', bwidth=1, alpha=None, label=None):
         super().__init__(message, size=size, shape=shape, color=color, bcolor=bcolor, bwidth=bwidth, alpha=alpha, label=label)

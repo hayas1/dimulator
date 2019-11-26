@@ -1,12 +1,14 @@
-from dimulator.node import DirectedNode, UndirectedNode
+from dimulator.node import AbstractNode, DirectedNode, UndirectedNode
 from dimulator.edge import DirectedEdge, UndirectedEdge
 
 import networkx as nx
 
 class AbstractGraph:
-    def __init__(self):
+    def __init__(self, nodes=None):
         self.__nodes = []
         self.__edges = []
+        if nodes != None:
+            self.__nodes.extend(nodes)
 
     def to_networkx_graph(self, directed=False, multigraph=False, weight=False):
         g = self.__select_graph(directed, multigraph)
@@ -28,31 +30,34 @@ class AbstractGraph:
 
     def draw_network(self, label=True, weight=False):
         g = self.to_networkx_graph(weight=weight)
-        self.draw_networkx(g, nx.spring_layout(g), label=label)
+        self.draw_networkx(g, nx.spring_layout(g), label=label, weight=weight)
 
-    def draw_networkx(self, g, pos, label=True):
+    # TODO refactoring these method should not belong to this class
+    def draw_networkx(self, g, pos, label=False, weight=False):
         nodes, edges = self.nodes(), self.edges()
 
-        # TODO default argument can pass dictionary as **d
-        node_dict = [node.attr_dict() for node in nodes]
-        nsize = [d.get('size') for d in node_dict]
-        ncolor = [d.get('color') for d in node_dict]
-        nbcolor = [d.get('bcolor') for d in node_dict]
-        nbwidth = [d.get('bwidth') for d in node_dict]
-        nalpha = [d.get('alpha') for d in node_dict]
-        nlabel = [d.get('label') for d in node_dict]
+        node_dict = {'node_size': [], 'node_color': [], 'edgecolors': [], 'linewidths': [], 'alpha':[], 'label': []}
+        for node in nodes:
+            node_dict['node_size'].append(node.size)
+            node_dict['node_color'].append(node.color)
+            node_dict['edgecolors'].append(node.border_color)
+            node_dict['linewidths'].append(node.border_width)
+            node_dict['alpha'].append(node.transparency)
+            node_dict['label'].append(node.label)
 
-        edge_dict = [edge.attr_dict() for edge in edges]
-        ewidth = [d.get('width') for d in edge_dict]
-        ecolor = [d.get('color') for d in edge_dict]
-        estyle = [d.get('style') for d in edge_dict]
-        # ealpha = [d.get('alpha') for d in edge_dict]
-        elabel = [d.get('label') for d in edge_dict]
+        edge_dict = {'width': [], 'edge_color': [], 'style': [], 'label': []}
+        for edge in edges:
+            edge_dict['width'].append(edge.width)
+            edge_dict['edge_color'].append(edge.color)
+            edge_dict['style'].append(edge.style)
+            # edge_dict['alpha'].append(edge.transparency)
+            edge_dict['label'].append(edge.label)
 
-        nx.draw_networkx_nodes(g, pos, node_size=nsize, node_color=ncolor, edgecolors=nbcolor, linewidths=nbwidth, alpha=nalpha, label=nlabel)
-        nx.draw_networkx_edges(g, pos, width=ewidth, edge_color=ecolor, style=estyle, label=elabel)
+        nx.draw_networkx_nodes(g, pos, nodelist=nodes, node_shape=AbstractNode.SHAPE, **node_dict)
+        nx.draw_networkx_edges(g, pos, edgelist=list(map(lambda e: e.to_networkx_edge(weight=False), edges)), **edge_dict)
+        nx.draw_networkx_labels(g, pos)
         if label:
-            nx.draw_networkx_labels(g, pos)
+            nx.draw_networkx_edge_labels(g, pos, font_size=8)
 
     def nodes(self):
         return list(self.__nodes)
@@ -72,7 +77,7 @@ class AbstractGraph:
     def add_node(self, node):
         self.__nodes.append(node)
 
-    def extend_nodes(self, *nodes):
+    def extend_nodes(self, nodes):
         self.__nodes.extend(nodes)
 
     def remove_node(self, node):
@@ -92,13 +97,22 @@ class AbstractGraph:
         edge.eject()
 
     def max_weight(self):
-        return max(edge.weight() for edge in self.__edges)
+        return max(edge.weight for edge in self.__edges)
+
+    def max_degree(self):
+        return max(node.degree() for node in self.__nodes)
+
+    def n(self):
+        return len(self.__nodes)
+
+    def m(self):
+        return len(self.__edges)
 
 class DirectedGraph(AbstractGraph):     # TODO everything
     def to_networkx_graph(self, multigraph=False, weight=False):
         return super().to_networkx_graph(directed=True, multigraph=multigraph, weight=weight)
 
-    def connect_directed_edge(self, from_node, to_node, weight=1):
+    def connect_directed_edge(self, from_node, to_node, weight=10):
         edge = DirectedEdge(from_node, to_node, weight=weight, connect=True)
         self.add_edge(edge)
         return edge
@@ -115,10 +129,14 @@ class UndirectedGraph(AbstractGraph):
     def to_networkx_graph(self, multigraph=False, weight=False):
         return super().to_networkx_graph(directed=False, multigraph=multigraph, weight=weight)
 
-    def connect_undirected_edge(self, u, v, weight=1):
-        edge = UndirectedEdge(u, v, weight=weight, connect=True)
-        self.add_edge(edge)
-        return edge
+    def connect_undirected_edge(self, u, v, weight=10, duality=False, selfloop=False):
+        no_same_path = all(not edge.same_path(u, v) for edge in self.edges())
+        if (duality or no_same_path) and not (u==v and selfloop==False):
+            edge = UndirectedEdge(u, v, weight=weight, connect=True)
+            self.add_edge(edge)
+            return edge
+        else:
+            return None
 
     def remove_between_u_and_v(self, u, v):
         for edge in u.edges():
