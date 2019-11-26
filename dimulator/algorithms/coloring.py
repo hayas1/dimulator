@@ -82,14 +82,14 @@ class ColoringNode(UndirectedNode):
             self.bloadcast(self.make_message((self.c, x), color=self.color))
         else:
             self.induced_nc.setdefault(x, []).extend(m[0] for e, m in message_tuples if m[1]==x)
-            for e, m in message_tuples:
-                e.color = 'r'
             if self.c == round:
                 c = self.induced_min_color(x)
-                x_suffix = int(x[-1]) if x else 0        # 0 or 1
+                x_suffix = int(self.bin_id()[len(x)]) if x else 0        # 0 or 1
                 self.c = self.c if x else c
                 self.color = self.aveilable_color[(c-1)+(self.max_degree+1)*x_suffix]      # for animation
                 self.bloadcast(self.make_message((c, x), color=self.color))
+                for e, m in message_tuples:     # for animation
+                    e.color = 'r' if x_suffix==0 else 'c'
 
 
 
@@ -118,8 +118,7 @@ def animate_coloring(n=15, frames=None):
 
     # make and set edge
     for u, v, dist in degree_base_edge_layout(pos):
-        # graph.connect_undirected_edge(u, v, weight=min(20, 300/(1+np.exp(-(3*dist-5)))))
-        graph.connect_undirected_edge(u, v, weight=6)
+        graph.connect_undirected_edge(u, v, weight=min(20, 300/(1+np.exp(-(3*dist-5)))))
 
     # set max degree as initial knowledge
     for node in nodes:
@@ -139,11 +138,7 @@ def animate_coloring(n=15, frames=None):
     # start animation
     return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10)
 
-    # graph.draw_network(label=False)
-    # daemon.main_loop()
-    # return 'a'
-
 def save_coloring_as_gif(n=15, frames=None, dir='./out', file='coloring.gif'):
     os.makedirs(dir, exist_ok=True)
     ani = animate_coloring(n=n, frames=frames)
-    ani.save(f'{dir}/{file}', fps=10)
+    ani.save(f'{dir}/{file}', fps=15)
