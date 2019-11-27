@@ -114,7 +114,7 @@ def animate_all_pair_shortest_path(n=15, frames=None):
             node.initialize(root=False)
 
     # make daemon and set graph
-    daemon = FairDaemon(graph)
+    daemon = FairDaemon(graph, conflict=False)
 
     # start animation
     return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10), nodes

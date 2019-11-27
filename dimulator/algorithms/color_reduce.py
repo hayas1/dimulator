@@ -63,7 +63,7 @@ def animate_color_reduce(n=15, frames=None):
         node.make_aveilable_color(graph.n(), graph.max_degree())
 
     # make daemon and set graph
-    daemon = FairDaemon(graph)
+    daemon = FairDaemon(graph, conflict=False)
 
     # start animation
     return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10)

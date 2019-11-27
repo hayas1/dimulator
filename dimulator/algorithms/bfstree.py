@@ -49,7 +49,7 @@ def animate_breadth_first_tree(n=15, frames=None):
         graph.connect_undirected_edge(u, v, weight=min(20, 300/(1+np.exp(-(3*dist-5)))))
 
     # make daemon and set graph
-    daemon = FairDaemon(graph)
+    daemon = FairDaemon(graph, conflict=False)
 
     # start animation
     return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10)

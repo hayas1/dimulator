@@ -118,14 +118,10 @@ def animate_all_pair_shortest_path_1token(n=15, frames=None):
             node.initialize(root=False)
 
     # make daemon and set graph
-    daemon = FairDaemon(graph)
+    daemon = FairDaemon(graph, conflict=False)
 
     # start animation
     return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10), nodes
-
-    graph.draw_network(label=False)
-    daemon.main_loop(timeout=1500)
-    return nodes
 
 def save_apsp_1token_as_gif(n=15, frames=None, dir='./out', file='apsp1t.gif'):
     os.makedirs(dir, exist_ok=True)

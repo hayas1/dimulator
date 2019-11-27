@@ -66,7 +66,7 @@ class CentralDaemon(AbstractDaemon):
 
 
 class FairDaemon(AbstractDaemon):
-    def __init__(self, graph, conflict=True):
+    def __init__(self, graph, conflict=False):
         super().__init__(graph, conflict=conflict)
         self.update_interval = self.graph().max_weight()
 

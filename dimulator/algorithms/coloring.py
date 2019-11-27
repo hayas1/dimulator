@@ -133,7 +133,7 @@ def animate_coloring(n=15, frames=None):
         node.initialize(graph.n(), graph.max_degree())
 
     # make daemon and set graph
-    daemon = FairDaemon(graph)
+    daemon = FairDaemon(graph, conflict=False)
 
     # start animation
     return daemon.animation(pos, weight=False, label=False, interval=100, frames=frames or n*10)
